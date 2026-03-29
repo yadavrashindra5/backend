@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # This maps your local folder to /app in the container for live-syncing
+      - .:/app
+      # This prevents your Mac's node_modules from overwriting the container's node_modules
+      - /app/node_modules
+    # We override the start command here to install devDependencies (like nodemon) and run in dev mode
+    command: >
+      sh -c "npm install && npm run dev"
+    environment:
+      # Use an environment file if you have variables you need to pass
+      - PORT=8000
+    # Optional: If you eventually add a database like MySQL/PostgreSQL, you can add it as another service here
