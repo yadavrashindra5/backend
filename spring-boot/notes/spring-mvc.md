@@ -372,3 +372,450 @@ user.getId(); // null
 
 > **Interview Tip:**
 > If you want to accept a password in `@RequestBody` but never expose it in the API response, use **`@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)`**, **not** `@JsonIgnore`.
+
+
+# `ResponseEntity` in Spring Boot
+
+## What is `ResponseEntity`?
+
+`ResponseEntity` is used to return a **custom HTTP response** from a controller.
+
+It allows you to control:
+
+* Response Body
+* HTTP Status Code
+* HTTP Headers
+
+---
+
+## Syntax
+
+```java
+return ResponseEntity.status(HttpStatus.OK).body(data);
+```
+
+---
+
+## Example 1: Return Data
+
+```java
+@GetMapping("/users")
+public ResponseEntity<String> getUser() {
+    return ResponseEntity.ok("User Found");
+}
+```
+
+**Response**
+
+```http
+200 OK
+```
+
+```text
+User Found
+```
+
+---
+
+## Example 2: Resource Created
+
+```java
+@PostMapping("/users")
+public ResponseEntity<String> createUser() {
+    return ResponseEntity.status(HttpStatus.CREATED)
+            .body("User Created");
+}
+```
+
+**Response**
+
+```http
+201 Created
+```
+
+```text
+User Created
+```
+
+---
+
+## Example 3: Resource Not Found
+
+```java
+@GetMapping("/users/{id}")
+public ResponseEntity<String> getUser(@PathVariable int id) {
+
+    if (id != 1) {
+        return ResponseEntity.notFound().build();
+    }
+
+    return ResponseEntity.ok("User Found");
+}
+```
+
+---
+
+## Common Methods
+
+| Method                                                 | Status          |
+| ------------------------------------------------------ | --------------- |
+| `ResponseEntity.ok(body)`                              | 200 OK          |
+| `ResponseEntity.status(HttpStatus.CREATED).body(body)` | 201 Created     |
+| `ResponseEntity.badRequest().body(body)`               | 400 Bad Request |
+| `ResponseEntity.notFound().build()`                    | 404 Not Found   |
+| `ResponseEntity.noContent().build()`                   | 204 No Content  |
+
+---
+
+## Why use `ResponseEntity`?
+
+* Return custom HTTP status codes.
+* Return response body with status.
+* Add custom headers if needed.
+
+---
+
+## Quick Revision
+
+* `ResponseEntity` = Full HTTP Response.
+* Controls **Body + Status Code + Headers**.
+* Commonly used in REST APIs to send meaningful responses.
+
+
+# `@RequestParam` in Spring Boot
+
+## What is `@RequestParam`?
+
+`@RequestParam` is used to read **query parameters** from the URL.
+
+**Example URL**
+
+```text
+/users?page=1&size=10
+```
+
+Here:
+
+* `page` = 1
+* `size` = 10
+
+---
+
+## Syntax
+
+```java
+@RequestParam DataType variableName
+```
+
+---
+
+## Example 1: Single Parameter
+
+```java
+@GetMapping("/greet")
+public String greet(@RequestParam String name) {
+    return "Hello " + name;
+}
+```
+
+**Request**
+
+```text
+GET /greet?name=Rashindra
+```
+
+**Response**
+
+```text
+Hello Rashindra
+```
+
+---
+
+## Example 2: Multiple Parameters
+
+```java
+@GetMapping("/users")
+public String getUsers(
+        @RequestParam int page,
+        @RequestParam int size) {
+
+    return "Page: " + page + ", Size: " + size;
+}
+```
+
+**Request**
+
+```text
+GET /users?page=1&size=10
+```
+
+---
+
+## Example 3: Custom Parameter Name
+
+```java
+@GetMapping("/search")
+public String search(@RequestParam("q") String keyword) {
+    return keyword;
+}
+```
+
+**Request**
+
+```text
+GET /search?q=spring
+```
+
+---
+
+## Example 4: Optional Parameter
+
+```java
+@GetMapping("/users")
+public String getUsers(
+        @RequestParam(required = false) String city) {
+
+    return city;
+}
+```
+
+**Works with**
+
+```text
+GET /users
+```
+
+or
+
+```text
+GET /users?city=Delhi
+```
+
+---
+
+## Example 5: Default Value
+
+```java
+@GetMapping("/users")
+public String getUsers(
+        @RequestParam(defaultValue = "1") int page) {
+
+    return "Page: " + page;
+}
+```
+
+**Request**
+
+```text
+GET /users
+```
+
+**Response**
+
+```text
+Page: 1
+```
+
+---
+
+# Quick Revision
+
+| Annotation               | Purpose                                    |
+| ------------------------ | ------------------------------------------ |
+| `@RequestParam`          | Read query parameters from URL             |
+| `required = false`       | Makes parameter optional                   |
+| `defaultValue = "value"` | Uses default value if parameter is missing |
+| `@RequestParam("q")`     | Maps a different query parameter name      |
+
+> **Remember:** `@RequestParam` reads data after the `?` in the URL.
+
+
+# `@PathVariable` in Spring Boot
+
+## What is `@PathVariable`?
+
+`@PathVariable` is used to read **values from the URL path**.
+
+**Example**
+
+```text
+/users/101
+```
+
+Here, `101` is the path variable.
+
+---
+
+# Syntax
+
+```java
+@PathVariable DataType variableName
+```
+
+---
+
+# Example 1: Single Path Variable
+
+```java
+@GetMapping("/users/{id}")
+public String getUser(@PathVariable int id) {
+    return "User Id: " + id;
+}
+```
+
+**Request**
+
+```text
+GET /users/101
+```
+
+**Response**
+
+```text
+User Id: 101
+```
+
+---
+
+# Example 2: Multiple Path Variables
+
+```java
+@GetMapping("/users/{userId}/orders/{orderId}")
+public String getOrder(
+        @PathVariable int userId,
+        @PathVariable int orderId) {
+
+    return "User: " + userId + ", Order: " + orderId;
+}
+```
+
+**Request**
+
+```text
+GET /users/101/orders/5001
+```
+
+**Response**
+
+```text
+User: 101, Order: 5001
+```
+
+---
+
+# Does Order Matter?
+
+Yes, the **URL structure matters**, not the order of method parameters.
+
+### Correct
+
+```java
+@GetMapping("/users/{userId}/orders/{orderId}")
+public String getOrder(
+        @PathVariable int userId,
+        @PathVariable int orderId) {
+    return "";
+}
+```
+
+Request
+
+```text
+/users/101/orders/5001
+```
+
+Result
+
+```text
+userId = 101
+orderId = 5001
+```
+
+---
+
+### Method parameter order can change
+
+```java
+@GetMapping("/users/{userId}/orders/{orderId}")
+public String getOrder(
+        @PathVariable("orderId") int orderId,
+        @PathVariable("userId") int userId) {
+    return "";
+}
+```
+
+This also works because Spring matches by **name**, not parameter position.
+
+---
+
+# When do I need to pass the variable name?
+
+## Case 1: Same Name (No Need)
+
+```java
+@GetMapping("/users/{id}")
+public String getUser(@PathVariable int id) {
+    return "";
+}
+```
+
+`{id}` → `id`
+
+No need to specify the name.
+
+---
+
+## Case 2: Different Name (Required)
+
+```java
+@GetMapping("/users/{id}")
+public String getUser(@PathVariable("id") int userId) {
+    return "";
+}
+```
+
+Spring maps
+
+```text
+{id} → userId
+```
+
+Without `"id"` Spring won't know which path variable to bind.
+
+---
+
+# Multiple Variables with Different Names
+
+```java
+@GetMapping("/users/{id}/orders/{orderId}")
+public String getOrder(
+        @PathVariable("id") int userId,
+        @PathVariable("orderId") int orderNo) {
+
+    return "";
+}
+```
+
+---
+
+# `@PathVariable` vs `@RequestParam`
+
+| `@PathVariable`               | `@RequestParam`                                 |
+| ----------------------------- | ----------------------------------------------- |
+| Reads value from URL path     | Reads value from query parameter                |
+| `/users/101`                  | `/users?id=101`                                 |
+| Usually identifies a resource | Usually used for filtering, sorting, pagination |
+
+---
+
+# Quick Revision
+
+* `@PathVariable` reads values from the **URL path**.
+* If method parameter name and URL variable name are the **same**, no argument is needed.
+* If names are **different**, pass the variable name:
+
+  ```java
+  @PathVariable("id")
+  ```
+* Spring matches path variables by **name**, not by the order of method parameters.
