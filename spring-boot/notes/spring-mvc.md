@@ -819,3 +819,24 @@ public String getOrder(
   @PathVariable("id")
   ```
 * Spring matches path variables by **name**, not by the order of method parameters.
+
+# Spring MVC
+Layered Architecture
+- Controller (FrontLayer)
+- Service (Service/BusinessLayer)
+- Repository (DataLayer)
+- Database
+
+# Annotations
+- @Controller
+- RestController
+- Service
+- Repository
+- @RequestMapping
+- @ResponseBody
+- @GetMapping
+- @PostMapping
+- @PutMapping
+- @DeleteMapping
+- @RequestBody
+- @RequestParam
