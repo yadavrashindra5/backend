@@ -874,3 +874,826 @@ in production because it deletes existing tables and data.
 # One-Line Summary
 
 > **The `application.properties` file stores the database connection details and Hibernate settings, allowing Spring Boot to connect to the database and manage entities automatically.**
+
+
+
+
+# Custom Finder Methods & Query Methods in Spring Data JPA
+
+# Table of Contents
+
+1. Introduction
+2. What is a Finder Method?
+3. What is a Custom Finder Method?
+4. How Spring Creates Queries Automatically
+5. Finder Method Keywords
+6. Examples
+7. Nested Property Search
+8. Combining Multiple Conditions
+9. Sorting and Limiting Results
+10. What is a Query Method?
+11. @Query Annotation
+12. JPQL vs Native SQL
+13. Named Parameters
+14. Modifying Queries
+15. When to Use Finder Method vs Query Method
+16. Best Practices
+17. Summary
+
+---
+
+# Introduction
+
+When using **Spring Data JPA**, we don't always need to write SQL queries manually.
+
+Spring Data JPA provides two powerful ways to fetch data:
+
+1. **Custom Finder Methods**
+2. **Query Methods (@Query)**
+
+These features automatically reduce boilerplate code and make repositories much cleaner.
+
+---
+
+# What is a Finder Method?
+
+A **Finder Method** is a repository method whose name tells Spring Data JPA what query to generate.
+
+Spring reads the method name and automatically creates the SQL query.
+
+Example:
+
+```java
+List<User> findByName(String name);
+```
+
+You never write SQL.
+
+Spring automatically creates something similar to:
+
+```sql
+SELECT * FROM users
+WHERE name = ?;
+```
+
+---
+
+# What is a Custom Finder Method?
+
+A **Custom Finder Method** is simply a finder method that follows Spring Data JPA naming conventions to search data based on one or more fields.
+
+Spring generates the query automatically from the method name.
+
+Example Entity
+
+```java
+@Entity
+public class User {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    private Integer age;
+
+    private String city;
+
+    private Boolean active;
+
+}
+```
+
+Repository
+
+```java
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    List<User> findByName(String name);
+
+}
+```
+
+Usage
+
+```java
+List<User> users = userRepository.findByName("John");
+```
+
+Generated SQL (Conceptually)
+
+```sql
+SELECT *
+FROM user
+WHERE name='John';
+```
+
+---
+
+# How Spring Creates Queries Automatically
+
+Spring breaks the method name into different parts.
+
+Example
+
+```java
+findByName
+```
+
+Spring understands:
+
+| Part | Meaning |
+|------|----------|
+| find | Fetch records |
+| By | Start filtering |
+| Name | Column name |
+
+So it generates
+
+```sql
+SELECT *
+FROM user
+WHERE name=?;
+```
+
+---
+
+# Finder Method Keywords
+
+Spring understands many keywords.
+
+## Equal
+
+```java
+findByName(String name)
+```
+
+SQL
+
+```sql
+WHERE name = ?
+```
+
+---
+
+## And
+
+```java
+findByNameAndCity(String name, String city)
+```
+
+SQL
+
+```sql
+WHERE name=? AND city=?
+```
+
+---
+
+## Or
+
+```java
+findByNameOrCity(String name,String city)
+```
+
+SQL
+
+```sql
+WHERE name=? OR city=?
+```
+
+---
+
+## Greater Than
+
+```java
+findByAgeGreaterThan(Integer age)
+```
+
+SQL
+
+```sql
+WHERE age > ?
+```
+
+---
+
+## Less Than
+
+```java
+findByAgeLessThan(Integer age)
+```
+
+SQL
+
+```sql
+WHERE age < ?
+```
+
+---
+
+## Greater Than Equal
+
+```java
+findByAgeGreaterThanEqual(Integer age)
+```
+
+SQL
+
+```sql
+WHERE age >= ?
+```
+
+---
+
+## Less Than Equal
+
+```java
+findByAgeLessThanEqual(Integer age)
+```
+
+SQL
+
+```sql
+WHERE age <= ?
+```
+
+---
+
+## Between
+
+```java
+findByAgeBetween(Integer start,Integer end)
+```
+
+SQL
+
+```sql
+WHERE age BETWEEN ? AND ?
+```
+
+---
+
+## Like
+
+```java
+findByNameLike(String pattern)
+```
+
+Example
+
+```java
+findByNameLike("%John%");
+```
+
+SQL
+
+```sql
+WHERE name LIKE '%John%'
+```
+
+---
+
+## Containing
+
+Automatically adds `%`
+
+```java
+findByNameContaining(String word)
+```
+
+Example
+
+```java
+findByNameContaining("oh")
+```
+
+SQL
+
+```sql
+WHERE name LIKE '%oh%'
+```
+
+---
+
+## Starting With
+
+```java
+findByNameStartingWith(String prefix)
+```
+
+SQL
+
+```sql
+WHERE name LIKE 'Jo%'
+```
+
+---
+
+## Ending With
+
+```java
+findByNameEndingWith(String suffix)
+```
+
+SQL
+
+```sql
+WHERE name LIKE '%hn'
+```
+
+---
+
+## Ignore Case
+
+```java
+findByNameIgnoreCase(String name)
+```
+
+SQL (Conceptually)
+
+```sql
+LOWER(name)=LOWER(?)
+```
+
+---
+
+## True
+
+```java
+findByActiveTrue()
+```
+
+SQL
+
+```sql
+WHERE active=true
+```
+
+---
+
+## False
+
+```java
+findByActiveFalse()
+```
+
+SQL
+
+```sql
+WHERE active=false
+```
+
+---
+
+## In
+
+```java
+findByCityIn(List<String> cities)
+```
+
+SQL
+
+```sql
+WHERE city IN (...)
+```
+
+---
+
+## Not
+
+```java
+findByNameNot(String name)
+```
+
+SQL
+
+```sql
+WHERE name <> ?
+```
+
+---
+
+## Is Null
+
+```java
+findByCityIsNull()
+```
+
+SQL
+
+```sql
+WHERE city IS NULL
+```
+
+---
+
+## Is Not Null
+
+```java
+findByCityIsNotNull()
+```
+
+SQL
+
+```sql
+WHERE city IS NOT NULL
+```
+
+---
+
+# Combining Multiple Conditions
+
+Example
+
+```java
+List<User> findByNameAndAgeGreaterThan(String name,Integer age);
+```
+
+Generated SQL
+
+```sql
+SELECT *
+FROM user
+WHERE name=?
+AND age>?;
+```
+
+Another Example
+
+```java
+findByCityAndActiveTrue(String city)
+```
+
+Generated SQL
+
+```sql
+WHERE city=?
+AND active=true;
+```
+
+---
+
+# Nested Property Search
+
+Suppose
+
+```java
+@Entity
+class Address{
+
+    @Id
+    Long id;
+
+    String city;
+}
+```
+
+```java
+@Entity
+class User{
+
+    @Id
+    Long id;
+
+    @ManyToOne
+    Address address;
+}
+```
+
+Repository
+
+```java
+findByAddressCity(String city)
+```
+
+Spring automatically joins the tables.
+
+Equivalent JPQL
+
+```sql
+SELECT u
+FROM User u
+JOIN u.address a
+WHERE a.city=?
+```
+
+---
+
+# Sorting Results
+
+Example
+
+```java
+findByCityOrderByAgeAsc(String city)
+```
+
+SQL
+
+```sql
+ORDER BY age ASC
+```
+
+Descending
+
+```java
+findByCityOrderByAgeDesc(String city)
+```
+
+---
+
+# Limiting Results
+
+First Record
+
+```java
+findFirstByOrderByAgeDesc()
+```
+
+Top 3
+
+```java
+findTop3ByOrderByAgeDesc()
+```
+
+---
+
+# What is a Query Method?
+
+Sometimes finder methods become too long or cannot express complex logic.
+
+In such cases we use
+
+```java
+@Query
+```
+
+This is called a **Query Method**.
+
+It allows us to write our own query.
+
+---
+
+# @Query Annotation
+
+Example
+
+```java
+@Query("SELECT u FROM User u WHERE u.city = :city")
+List<User> getUsers(String city);
+```
+
+Better with named parameter
+
+```java
+@Query("SELECT u FROM User u WHERE u.city = :city")
+List<User> getUsers(@Param("city") String city);
+```
+
+---
+
+# JPQL Query
+
+JPQL works with **Entity Names**, not table names.
+
+Entity
+
+```java
+@Entity
+class User{
+
+    private String name;
+}
+```
+
+JPQL
+
+```java
+SELECT u
+FROM User u
+WHERE u.name=:name
+```
+
+Notice
+
+We use
+
+```
+User
+```
+
+NOT
+
+```
+users
+```
+
+because JPQL works with entities.
+
+---
+
+# Native SQL Query
+
+If you want actual SQL
+
+```java
+@Query(value="SELECT * FROM users WHERE city=:city",
+nativeQuery=true)
+List<User> getUsers(@Param("city") String city);
+```
+
+Now this is real SQL.
+
+---
+
+# Named Parameters
+
+Without @Param
+
+```java
+@Query("SELECT u FROM User u WHERE u.name=?1")
+List<User> get(String name);
+```
+
+Using index
+
+```
+?1
+```
+
+Using @Param
+
+```java
+@Query("SELECT u FROM User u WHERE u.name=:name")
+List<User> get(@Param("name") String name);
+```
+
+Named parameters are easier to read.
+
+---
+
+# Modifying Queries
+
+For UPDATE or DELETE queries, use `@Modifying` along with `@Transactional`.
+
+Example
+
+```java
+@Modifying
+@Transactional
+@Query("UPDATE User u SET u.active = false WHERE u.id = :id")
+int deactivateUser(@Param("id") Long id);
+```
+
+Explanation:
+
+- `@Modifying` tells Spring that this query changes data.
+- `@Transactional` ensures the update runs inside a transaction.
+- The method returns the number of rows affected.
+
+Similarly, for delete:
+
+```java
+@Modifying
+@Transactional
+@Query("DELETE FROM User u WHERE u.active = false")
+int deleteInactiveUsers();
+```
+
+---
+
+# Finder Method vs Query Method
+
+| Feature | Finder Method | Query Method |
+|----------|---------------|--------------|
+| Query Writing | Automatic | Manual |
+| SQL Needed | No | Yes (JPQL or Native SQL) |
+| Easy to Read | ✅ Yes | Depends on query |
+| Good for Simple Conditions | ✅ Yes | Yes |
+| Good for Complex Queries | ❌ No | ✅ Yes |
+| Joins | Limited (through property navigation) | Full control |
+| Aggregate Functions | Difficult | Easy |
+| Group By | Not practical | Easy |
+| Subqueries | Not supported through method names | Supported |
+
+---
+
+# When to Use Finder Methods
+
+Use Finder Methods when:
+
+- Searching by one or two fields.
+- Query is simple.
+- No joins or aggregations are required.
+- You want less code.
+
+Examples
+
+```java
+findByName()
+
+findByCity()
+
+findByAgeGreaterThan()
+
+findByNameAndCity()
+```
+
+---
+
+# When to Use @Query
+
+Use `@Query` when:
+
+- The query is complex.
+- Multiple joins are required.
+- You need `GROUP BY`, `HAVING`, or subqueries.
+- You want full control over the generated query.
+- Finder method names become too long.
+
+Example
+
+Instead of:
+
+```java
+findByDepartmentNameAndSalaryGreaterThanAndCityAndActiveTrue(...)
+```
+
+You can write:
+
+```java
+@Query("""
+       SELECT e
+       FROM Employee e
+       WHERE e.department.name = :department
+         AND e.salary > :salary
+         AND e.city = :city
+         AND e.active = true
+       """)
+List<Employee> findEmployees(
+        @Param("department") String department,
+        @Param("salary") Double salary,
+        @Param("city") String city);
+```
+
+This is much more readable.
+
+---
+
+# Best Practices
+
+- Prefer **Finder Methods** for simple queries.
+- Use **@Query** for complex business logic.
+- Prefer **JPQL** over native SQL for portability.
+- Use **named parameters (`@Param`)** instead of positional parameters (`?1`, `?2`) for readability.
+- Keep repository methods focused on database access only.
+- Avoid creating extremely long finder method names.
+
+---
+
+# Summary
+
+### Custom Finder Method
+
+- Query is generated automatically from the method name.
+- No SQL or JPQL needs to be written.
+- Best for simple searches.
+- Easy to read and maintain.
+
+Example:
+
+```java
+findByName(String name)
+
+findByAgeGreaterThan(Integer age)
+
+findByCityAndActiveTrue(String city)
+```
+
+---
+
+### Query Method
+
+- Uses the `@Query` annotation.
+- You write the query manually using **JPQL** or **Native SQL**.
+- Best for complex queries involving joins, grouping, subqueries, or updates/deletes.
+
+Example:
+
+```java
+@Query("SELECT u FROM User u WHERE u.city = :city")
+List<User> getUsers(@Param("city") String city);
+```
+
+---
+
+## Quick Revision
+
+| Finder Method | Query Method |
+|---------------|--------------|
+| Query generated automatically | Query written manually |
+| Based on method name | Uses `@Query` |
+| Best for simple conditions | Best for complex conditions |
+| Less code | More flexibility |
+| Easy to maintain | Full control over query |
+| No SQL/JPQL required | JPQL or Native SQL required |
