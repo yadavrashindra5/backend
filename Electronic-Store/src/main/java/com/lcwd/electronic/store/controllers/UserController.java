@@ -2,14 +2,23 @@ package com.lcwd.electronic.store.controllers;
 
 import com.lcwd.electronic.store.dtos.UserDto;
 import com.lcwd.electronic.store.response.ApiResponse;
+import com.lcwd.electronic.store.response.ImageResponse;
 import com.lcwd.electronic.store.response.PageableResponse;
+import com.lcwd.electronic.store.services.FileService;
 import com.lcwd.electronic.store.services.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 @RestController
@@ -17,6 +26,12 @@ import java.util.List;
 public class UserController {
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private FileService fileService;
+
+    @Value("${user.profile.image.path}")
+    private String imageUploadPath;
 
     // create
     @PostMapping
@@ -78,5 +93,27 @@ public class UserController {
         List<UserDto> userDtoList = userService.searchUser(keyword);
         ApiResponse<List<UserDto>> userFound = ApiResponse.success("User Found",userDtoList);
         return new ResponseEntity<>(userFound, HttpStatus.OK);
+    }
+
+
+    @PostMapping("/image/{userId}")
+    public ResponseEntity<ImageResponse> uploadImage(@RequestParam("userImage") MultipartFile image,@PathVariable("userId") String userid) throws IOException {
+        String imageName=fileService.uploadFile(image,imageUploadPath);
+
+        UserDto userDto=userService.getUser(userid);
+        userDto.setImageName(imageName);
+
+        UserDto userDto1 = userService.updateUser(userDto, userid);
+
+        ImageResponse imageResponse=ImageResponse.builder().imageName(imageName).success(true).build();
+        return new ResponseEntity<>(imageResponse,HttpStatus.CREATED);
+    }
+
+    @GetMapping("/image/{userId}")
+    public void serveUserImage(@PathVariable("userId") String userId,HttpServletResponse response) throws IOException {
+        UserDto user = userService.getUser(userId);
+        InputStream resource = fileService.getResource(imageUploadPath, user.getImageName());
+        response.setContentType("image/jpeg");
+        StreamUtils.copy(resource, response.getOutputStream());
     }
 }

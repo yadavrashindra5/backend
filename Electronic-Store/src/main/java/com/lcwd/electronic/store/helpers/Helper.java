@@ -20,6 +20,8 @@ public class Helper {
         pageableResponse.setPageNumber(page.getNumber()+1);
         pageableResponse.setPageSize(page.getSize());
         pageableResponse.setLastPage(page.isLast());
+        pageableResponse.setTotalElements((int)page.getTotalElements());
+        pageableResponse.setTotalPages((int)page.getTotalPages());
         return pageableResponse;
     }
 }

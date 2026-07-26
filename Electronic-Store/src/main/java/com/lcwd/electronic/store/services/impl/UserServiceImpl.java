@@ -10,12 +10,18 @@ import com.lcwd.electronic.store.response.PageableResponse;
 import com.lcwd.electronic.store.services.UserService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +34,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private ModelMapper mapper;
+
+    @Value("${user.profile.image.path}")
+    private String imagePath;
 
     @Override
     public UserDto createUser(UserDto userDto) {
@@ -48,6 +57,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(userDto.getPassword());
         user.setGender(userDto.getGender());
         user.setAbout(userDto.getAbout());
+        user.setImageName(userDto.getImageName());
 
         User updatedUser = userRepository.save(user);
         UserDto userDto1 = entityToDto(updatedUser);
@@ -57,6 +67,16 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(String userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        String fullPath=imagePath+user.getImageName();
+        Path path= Paths.get(fullPath);
+        try{
+            Files.deleteIfExists(path);
+        }catch (IOException e){
+            e.printStackTrace();
+            System.out.println("File not found");
+        }
+
         userRepository.delete(user);
     }
 

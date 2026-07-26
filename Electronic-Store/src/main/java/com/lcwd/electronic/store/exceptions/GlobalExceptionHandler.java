@@ -38,4 +38,10 @@ public class GlobalExceptionHandler {
         ApiResponse<Map<String,Object>> apiResponse=ApiResponse.failure("Valid exception",map);
         return new ResponseEntity<>(apiResponse,HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(BadApiRequest.class)
+    public ResponseEntity<ApiResponse<String>> handleBadApiRequest(BadApiRequest ex){
+        ApiResponse<String> apiResponse=ApiResponse.failure("Bad Api Request",null);
+        return new ResponseEntity<>(apiResponse,HttpStatus.BAD_REQUEST);
+    }
 }
