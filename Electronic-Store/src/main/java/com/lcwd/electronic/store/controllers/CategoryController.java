@@ -1,9 +1,11 @@
 package com.lcwd.electronic.store.controllers;
 
 import com.lcwd.electronic.store.dtos.CategoryDto;
+import com.lcwd.electronic.store.dtos.ProductDto;
 import com.lcwd.electronic.store.response.ApiResponse;
 import com.lcwd.electronic.store.response.PageableResponse;
 import com.lcwd.electronic.store.services.CategoryService;
+import com.lcwd.electronic.store.services.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,9 @@ public class CategoryController {
 
     @Autowired
     private CategoryService categoryService;
+
+    @Autowired
+    private ProductService productService;
 
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<CategoryDto>>createCategory(@RequestBody CategoryDto categoryDto){
@@ -56,5 +61,34 @@ public class CategoryController {
         PageableResponse<CategoryDto> allCategories = categoryService.getAllCategories(pageNumber, pageSize, sortBy, sortDir);
         ApiResponse<PageableResponse<CategoryDto>> allCategoriesFound = ApiResponse.success("All Categories Found", allCategories);
         return new ResponseEntity<>(allCategoriesFound, HttpStatus.OK);
+    }
+
+    // create product with category
+    @PostMapping("/{categoryId}/products")
+    public ResponseEntity<ApiResponse<ProductDto>> createWithCategory(@RequestBody ProductDto productDto, @PathVariable(value = "categoryId") String categoryId){
+        ProductDto withCategory = productService.createWithCategory(productDto, categoryId);
+        ApiResponse<ProductDto> productCreatedSuccessfully = ApiResponse.success("Product Created Successfully", withCategory);
+        return new ResponseEntity<>(productCreatedSuccessfully, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{categoryId}/products/{productId}")
+    public ResponseEntity<ApiResponse<ProductDto>> updateCategoryOfProducts(@PathVariable(value = "categoryId") String categoryId,@PathVariable(value = "productId") String productId){
+        ProductDto productDto = productService.updateCategory(productId, categoryId);
+        ApiResponse<ProductDto> productUpdatedSuccessfully = ApiResponse.success("Product Updated Successfully", productDto);
+        return new ResponseEntity<>(productUpdatedSuccessfully, HttpStatus.OK);
+    }
+
+    @GetMapping("/{categoryId}/products")
+    public ResponseEntity<ApiResponse<PageableResponse<ProductDto>>> getProductByCategoryId(
+            @RequestParam(value = "pageNumber",defaultValue = "0",required = false) int pageNumber,
+            @RequestParam(value = "pageSize",defaultValue = "10",required = false) int pageSize,
+            @RequestParam(value = "sortBy",defaultValue = "title",required = false) String sortBy,
+            @RequestParam(value = "sortDir",defaultValue = "asc",required = false) String sortDir,
+            @PathVariable(value = "categoryId") String categoryId
+    ){
+        PageableResponse<ProductDto> allCategory= productService.getAllCategory(categoryId, pageNumber, pageSize, sortBy, sortDir);
+
+        ApiResponse<PageableResponse<ProductDto>> allCategoryFound = ApiResponse.success("All Category Found", allCategory);
+        return new ResponseEntity<>(allCategoryFound, HttpStatus.OK);
     }
 }
